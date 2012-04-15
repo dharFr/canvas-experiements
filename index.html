@@ -1,0 +1,175 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+	<meta charset="UTF-8">
+	<title>Canvas testing</title>
+	<style>
+	body {
+		bottom: 0;
+		font: 14px "Lucida Grande",Helvetica,Arial,sans-serif;
+		margin: 0;
+		padding: 0;
+		position: absolute;
+		top: 0;
+		width: 100%;
+
+		background-color: white;
+
+		-moz-transition: background-color 1s;
+	}
+
+	h1 { font-size: 21px; }
+	.content {
+		padding: 50px;
+		text-align: center;
+	}
+	a { color: #00B7FF; }
+	canvas { background-color: #ccc; display: inline-block;}
+
+	</style>
+</head>
+<body>
+	<div id="content" class="content">
+		<h1>Choose a file <span id="dnd">and drop it anywhere</span></h1>
+		<form id="file-form" onsubmit="return false;">
+			<input type="file" id="filefield" name="file">
+		</form>
+	</div>
+	<script src="js/libs/jquery-1.7.1.min.js"></script>
+	<script src="js/canvas.js"></script>
+	<script>
+;(function(){
+
+
+	var fileInput = document.getElementById('filefield');
+	fileInput.addEventListener('change', onFileSelected)
+
+	// Handle Drag'n'drop 
+	if (supportDragAndDrop()) {
+
+		document.body.addEventListener('dragenter',	onDragEnter);
+		document.body.addEventListener('dragleave',	onDragLeave);
+		document.body.addEventListener('drop',		onDropFile);
+		document.body.addEventListener('dragover',	onDragOver);
+		$('#file-form').remove();
+	}
+	else {
+		$('#dnd').remove();
+	}
+
+	function onFileSelected(e) {
+		console.log('changed', e);
+		var file;
+		if (fileInput.files && (file = fileInput.files[0])) {
+			chosenFile(file);
+		}
+	}
+
+	// Test from Modernizr: 
+	// https://github.com/Modernizr/Modernizr/blob/master/modernizr.js#L528-531
+	function supportDragAndDrop() {
+
+		var div = document.createElement('div');
+		return ('draggable' in div) || ('ondragstart' in div && 'ondrop' in div);    
+	}
+
+	// prevent default behaviour
+	function onDragEnter (e) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	function onDragLeave (e) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	function onDragOver (e) {
+		e.preventDefault();
+		e.stopPropagation();
+	}
+	function onDropFile(e) {
+
+		e.preventDefault();
+		e.stopPropagation();
+
+		var file;
+		if (e.dataTransfer && (file = e.dataTransfer.files[0])) {
+
+			chosenFile(file);
+		}
+		return false;
+	}
+
+	var canvas, content;
+	canvas = document.createElement('canvas');
+	content = document.getElementById('content')
+	content.appendChild(canvas);
+	canvas.setAttribute('style', 'display: none;');
+
+
+	var cUtils = new CanvasUtils(canvas, {
+		maxWidth: $(content).width()
+	});
+
+	function chosenFile(file) {
+ 
+		var imageType = /image.*/;  
+		
+		if (!file.type.match(imageType)) {
+			alert('I only fed with pictures, thanks! ;) ');
+		  return;  
+		}
+
+		// Utility function
+		function rbgToCSS(r, g, b, a) {
+			return (typeof a === 'undefined') ? 'rgb('+r+', '+g+', '+b+')' : 'rgba('+r+', '+g+', '+b+', '+a+')'
+		}
+
+		cUtils.loadImage(file, function(){
+
+			canvas.removeAttribute('style');
+
+			// Launch Worker
+			cUtils.computeMediumColor(function(color){
+				
+				document.body.style.backgroundColor = rbgToCSS( color.r, color.g, color.b, color.a);
+			});
+
+			cUtils.mosaique(function(data) {
+				
+				console.log('mosaique cb');
+
+				//cUtils.computeMediumColor(data, function () {
+				//	console.log('');
+				//});
+			});
+		});
+	}
+})();
+
+if (!Function.prototype.bind) {
+	Function.prototype.bind = function (oThis) {
+
+		// closest thing possible to the ECMAScript 5 internal IsCallable
+		// function
+		if (typeof this !== "function")
+		throw new TypeError(
+			"Function.prototype.bind - what is trying to be fBound is not callable"
+		);
+
+		var aArgs = Array.prototype.slice.call(arguments, 1),
+			fToBind = this,
+			fNOP = function () {},
+			fBound = function () {
+				return fToBind.apply( this instanceof fNOP ? this : oThis || window,
+					   aArgs.concat(Array.prototype.slice.call(arguments)));
+			};
+
+		fNOP.prototype = this.prototype;
+		fBound.prototype = new fNOP();
+
+		return fBound;
+	};
+}
+	</script>
+</body>
+</html>
